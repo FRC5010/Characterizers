@@ -28,8 +28,8 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends TimedRobot {
 
-	static private double WHEEL_DIAMETER = 0.5;
-	static private double ENCODER_PULSE_PER_REV = 4096;
+	static private double WHEEL_DIAMETER = 6;
+	static private double ENCODER_PULSE_PER_REV = 120;
 	static private int PIDIDX = 0;
 
 	Joystick stick;
@@ -54,25 +54,25 @@ public class Robot extends TimedRobot {
 
 		stick = new Joystick(0);
 
-		leftFrontMotor = new WPI_TalonSRX(1);
+		leftFrontMotor = new WPI_TalonSRX(2);
 		leftFrontMotor.setInverted(false);
 		leftFrontMotor.setSensorPhase(false);
 		leftFrontMotor.setNeutralMode(NeutralMode.Brake);
 
-		rightFrontMotor = new WPI_TalonSRX(2);
+		rightFrontMotor = new WPI_TalonSRX(3);
 		rightFrontMotor.setInverted(false);
 		rightFrontMotor.setSensorPhase(true);
 		rightFrontMotor.setNeutralMode(NeutralMode.Brake);
 
 		// left rear follows front
-		WPI_TalonSRX leftRearMotor = new WPI_TalonSRX(3);
+		WPI_TalonSRX leftRearMotor = new WPI_TalonSRX(5);
 		leftRearMotor.setInverted(false);
 		leftRearMotor.setSensorPhase(false);
 		leftRearMotor.follow(leftFrontMotor);
 		leftRearMotor.setNeutralMode(NeutralMode.Brake);
 
 		// right rear follows front
-		WPI_TalonSRX rightRearMotor = new WPI_TalonSRX(4);
+		WPI_TalonSRX rightRearMotor = new WPI_TalonSRX(6);
 		rightRearMotor.setInverted(false);
 		rightRearMotor.setSensorPhase(true);
 		rightRearMotor.follow(rightRearMotor);
