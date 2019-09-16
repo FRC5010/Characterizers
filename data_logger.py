@@ -35,7 +35,7 @@ import queue
 import time
 import threading
 
-from data_analyzer import analyze_data, AUTOSPEED_COL, L_ENCODER_P_COL, R_ENCODER_P_COL
+from data_analyzer import AUTOSPEED_COL, L_ENCODER_P_COL, R_ENCODER_P_COL
 
 import logging
 

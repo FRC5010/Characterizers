@@ -18,17 +18,20 @@ import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.CounterBase.EncodingType;
+import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends TimedRobot {
 
-	static private double WHEEL_DIAMETER = 6;
+	static private double WHEEL_DIAMETER = .5;
 	static private double ENCODER_PULSE_PER_REV = 120;
 	static private int PIDIDX = 0;
 
@@ -37,7 +40,9 @@ public class Robot extends TimedRobot {
 
 	WPI_TalonSRX leftFrontMotor;
 	WPI_TalonSRX rightFrontMotor;
-
+	Encoder leftEncoder;
+	Encoder rightEncoder;
+	
 	Supplier<Double> leftEncoderPosition;
 	Supplier<Double> leftEncoderRate;
 	Supplier<Double> rightEncoderPosition;
@@ -78,8 +83,9 @@ public class Robot extends TimedRobot {
 		rightRearMotor.follow(rightRearMotor);
 		rightRearMotor.setNeutralMode(NeutralMode.Brake);
 
-
-		//
+		rightEncoder = new Encoder(0, 1, true,EncodingType.k1X);
+		leftEncoder = new Encoder(2, 3, false, EncodingType.k1X);
+			//
 		// Configure drivetrain movement
 		//
 
@@ -87,7 +93,7 @@ public class Robot extends TimedRobot {
 		SpeedControllerGroup rightGroup = new SpeedControllerGroup(rightFrontMotor, rightRearMotor);
 
 		drive = new DifferentialDrive(leftGroup, rightGroup);
-		drive.setDeadband(0);
+		drive.setDeadband(.1);
 
 
 		//
@@ -96,18 +102,26 @@ public class Robot extends TimedRobot {
 		//
 
 		double encoderConstant = (1 / ENCODER_PULSE_PER_REV) * WHEEL_DIAMETER * Math.PI;
+		leftEncoder.setDistancePerPulse(encoderConstant);
+		rightEncoder.setDistancePerPulse(encoderConstant);
 
 		leftFrontMotor.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, PIDIDX, 10);
-		leftEncoderPosition = () -> leftFrontMotor.getSelectedSensorPosition(PIDIDX) * encoderConstant;
-		leftEncoderRate = () -> leftFrontMotor.getSelectedSensorVelocity(PIDIDX) * encoderConstant * 10;
+		// leftEncoderPosition = () -> leftFrontMotor.getSelectedSensorPosition(PIDIDX) * encoderConstant;
+		// leftEncoderRate = () -> leftFrontMotor.getSelectedSensorVelocity(PIDIDX) * encoderConstant * 10;
+		leftEncoderPosition = () -> leftEncoder.getDistance();
+		leftEncoderRate = () -> leftEncoder.getRate();
 
 		rightFrontMotor.configSelectedFeedbackSensor(FeedbackDevice.QuadEncoder, PIDIDX, 10);
-		rightEncoderPosition = () -> rightFrontMotor.getSelectedSensorPosition(PIDIDX) * encoderConstant;
-		rightEncoderRate = () -> rightFrontMotor.getSelectedSensorVelocity(PIDIDX) * encoderConstant * 10;
+		// rightEncoderPosition = () -> rightFrontMotor.getSelectedSensorPosition(PIDIDX) * encoderConstant;
+		// rightEncoderRate = () -> rightFrontMotor.getSelectedSensorVelocity(PIDIDX) * encoderConstant * 10;
+		rightEncoderPosition = () -> rightEncoder.getDistance();
+		rightEncoderRate = () -> rightEncoder.getRate();
 
 		// Reset encoders
-		leftFrontMotor.setSelectedSensorPosition(0);
-		rightFrontMotor.setSelectedSensorPosition(0);
+		// leftFrontMotor.setSelectedSensorPosition(0);
+		// rightFrontMotor.setSelectedSensorPosition(0);
+		leftEncoder.reset();
+		rightEncoder.reset();
 
 		// Set the update rate instead of using flush because of a ntcore bug
 		// -> probably don't want to do this on a robot in competition
@@ -135,16 +149,20 @@ public class Robot extends TimedRobot {
 
 	@Override
 	public void teleopInit() {
+		leftEncoder.reset();
+		rightEncoder.reset();
 		System.out.println("Robot in operator control mode");
 	}
 
 	@Override
 	public void teleopPeriodic() {
-		drive.arcadeDrive(-stick.getY(), stick.getX());
+		drive.arcadeDrive(-stick.getRawAxis(1), stick.getRawAxis(4));
 	}
 
 	@Override
 	public void autonomousInit() {
+		leftEncoder.reset();
+		rightEncoder.reset();
 		System.out.println("Robot in autonomous mode");
 	}
 
