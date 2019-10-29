@@ -10,39 +10,36 @@ package dc;
 import java.util.function.Supplier;
 
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
-import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
-import com.revrobotics.EncoderType;
+import com.kauailabs.navx.frc.AHRS;
 
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.CounterBase.EncodingType;
+import edu.wpi.first.wpilibj.SerialPort.Port;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.PWMTalonSRX;
-import edu.wpi.first.wpilibj.PWMVictorSPX;
 import edu.wpi.first.wpilibj.PowerDistributionPanel;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.Spark;
 import edu.wpi.first.wpilibj.SpeedController;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.Victor;
-import edu.wpi.first.wpilibj.VictorSP;
-import edu.wpi.first.wpilibj.CounterBase.EncodingType;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends TimedRobot {
 
-  static private double WHEEL_DIAMETER = 0.5;
+  static private double WHEEL_DIAMETER = 0.5155;
   static private double ENCODER_PULSE_PER_REV = 120;
+  boolean useDC = true;
 
   Joystick stick1;
   Joystick stick2;
 
   DifferentialDrive drive;
   PowerDistributionPanel pdp;
-
+  public static AHRS gyro = new AHRS(Port.kUSB1);
+  
   Supplier<Double> leftEncoderPosition;
   Supplier<Double> leftEncoderRate;
   Supplier<Double> rightEncoderPosition;
@@ -62,7 +59,7 @@ public class Robot extends TimedRobot {
     stick1 = new Joystick(0);
     stick2 = new Joystick(1);
     pdp = new PowerDistributionPanel();
-    
+
     leftMotor1 = new WPI_TalonSRX(2);
 
     rightMotor1 = new WPI_TalonSRX(3);
@@ -119,10 +116,20 @@ public class Robot extends TimedRobot {
   @Override
     public void disabledPeriodic() {
   }
+  boolean gyroReset = false;
 
   @Override
   public void robotPeriodic() {
-    // feedback for users, but not used by the control program
+    if (!gyroReset) {
+      if (!gyro.isCalibrating()) {
+        gyroReset = true;
+        gyro.reset();
+      }
+    }
+    SmartDashboard.putNumber("Gyro Angle", gyro.getAngle());
+    SmartDashboard.putNumber("Gyro Rotation", gyro.getRate());
+    SmartDashboard.putBoolean("Gyro IsCal", gyro.isCalibrating());
+    SmartDashboard.putBoolean("Gyro IsConn", gyro.isConnected());    // feedback for users, but not used by the control program
     SmartDashboard.putNumber("l_encoder_pos", leftEncoderPosition.get());
     SmartDashboard.putNumber("l_encoder_rate", leftEncoderRate.get());
     SmartDashboard.putNumber("r_encoder_pos", rightEncoderPosition.get());
@@ -178,7 +185,6 @@ public class Robot extends TimedRobot {
     double rightRate = rightEncoderRate.get();
 
     double battery = RobotController.getBatteryVoltage();
-    double motorVolts = battery * Math.abs(priorAutospeed);
 
     double leftMotorVolts = leftMotor1.getMotorOutputVoltage();
 		double rightMotorVolts = rightMotor1.getMotorOutputVoltage();
@@ -187,8 +193,11 @@ public class Robot extends TimedRobot {
     double autospeed = autoSpeedEntry.getDouble(0);
     priorAutospeed = autospeed;
 
+    double angle = gyro.getAngle();
+    double driftCorrection = angle * .01;
+
     // command motors to do things
-    drive.tankDrive(autospeed, autospeed, false);
+    drive.tankDrive(autospeed + (useDC ? driftCorrection : 0.0), autospeed - (useDC ? driftCorrection : 0.0), false);
 
     // send telemetry data array back to NT
     numberArray[0] = now;
