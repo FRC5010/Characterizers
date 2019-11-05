@@ -18,20 +18,23 @@ import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.AnalogGyro;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PowerDistributionPanel;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends TimedRobot {
 
-  static private double WHEEL_DIAMETER = 0.5;
+  static private double WHEEL_DIAMETER = 0.5155;
   static private double GEARING = 1;
   static private int PIDIDX = 0;
+  static private double kGP = 1 / 45;
+  static private double gearRatio = 6.0;
 
   Joystick stick1;
   Joystick stick2;
@@ -40,7 +43,8 @@ public class Robot extends TimedRobot {
   CANSparkMax leftMaster;
   CANSparkMax rightMaster;
   PowerDistributionPanel pdp;
-
+  Gyro gyro;
+  
   Supplier<Double> leftEncoderPosition;
   Supplier<Double> leftEncoderRate;
   Supplier<Double> rightEncoderPosition;
@@ -87,6 +91,7 @@ public class Robot extends TimedRobot {
     // Configure encoder related functions -- getDistance and getrate should
     // return units and units/s
     //
+    GEARING = leftMaster.getEncoder().getCPR() * gearRatio;
 
     double encoderConstant =
         (1 / GEARING) * WHEEL_DIAMETER * Math.PI;
@@ -106,6 +111,7 @@ public class Robot extends TimedRobot {
     rightMaster.getEncoder().setPosition(0);
 
     pdp = new PowerDistributionPanel();
+    gyro = new AnalogGyro(0);
 
     // Set the update rate instead of using flush because of a ntcore bug
     // -> probably don't want to do this on a robot in competition
@@ -136,6 +142,9 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopInit() {
+    leftMaster.getEncoder().setPosition(0);
+    rightMaster.getEncoder().setPosition(0);
+    gyro.reset();
     System.out.println("Robot in operator control mode");
   }
 
@@ -155,6 +164,9 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousInit() {
+    leftMaster.getEncoder().setPosition(0);
+    rightMaster.getEncoder().setPosition(0);
+    gyro.reset();
     System.out.println("Robot in autonomous mode");
   }
 
@@ -187,8 +199,11 @@ public class Robot extends TimedRobot {
     double autospeed = autoSpeedEntry.getDouble(0);
     priorAutospeed = autospeed;
 
+    double currentHeading = gyro.getAngle();
+    double turn = (-currentHeading) * kGP;
+
     // command motors to do things
-    drive.tankDrive(autospeed, autospeed, false);
+    drive.tankDrive(autospeed + turn, autospeed - turn, false);
 
     // send telemetry data array back to NT
     numberArray[0] = now;
