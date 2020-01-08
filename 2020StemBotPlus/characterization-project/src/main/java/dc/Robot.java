@@ -37,7 +37,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Robot extends TimedRobot {
 
-  static private double WHEEL_DIAMETER = 0.51;
+  static private double WHEEL_DIAMETER = 0.155448;
   static private double GEARING = 6;
   static private int PIDIDX = 0;
 
@@ -46,6 +46,8 @@ public class Robot extends TimedRobot {
 
   CANSparkMax leftMaster;
   CANSparkMax rightMaster;
+  CANSparkMax leftSlave0; 
+  CANSparkMax rightSlave0 ;
 
   CANEncoder leftEncoder;
   CANEncoder rightEncoder;
@@ -72,24 +74,24 @@ public class Robot extends TimedRobot {
 
     stick = new Joystick(0);
 
-    leftMaster = new CANSparkMax(0, MotorType.kBrushless);
+    leftMaster = new CANSparkMax(1, MotorType.kBrushless);
     leftMaster.setInverted(false);
     leftMaster.setIdleMode(IdleMode.kBrake);
 
     leftEncoder = leftMaster.getEncoder();
 
-    rightMaster = new CANSparkMax(2, MotorType.kBrushless);
-    rightMaster.setInverted(true);
+    rightMaster = new CANSparkMax(3, MotorType.kBrushless);
+    rightMaster.setInverted(false);
     rightMaster.setIdleMode(IdleMode.kBrake);
 
     rightEncoder = rightMaster.getEncoder();
 
-    CANSparkMax leftSlave0 = new CANSparkMax(1, MotorType.kBrushless);
-    leftSlave0.follow(leftMaster);
+     leftSlave0 = new CANSparkMax(2, MotorType.kBrushless);
+    leftSlave0.follow(leftMaster,false);
     leftSlave0.setIdleMode(IdleMode.kBrake);
 
-    CANSparkMax rightSlave0 = new CANSparkMax(3, MotorType.kBrushless);
-    rightSlave0.follow(rightMaster, true);
+     rightSlave0 = new CANSparkMax(4, MotorType.kBrushless);
+    rightSlave0.follow(rightMaster, false);
     rightSlave0.setIdleMode(IdleMode.kBrake);
 
     //
@@ -113,8 +115,7 @@ public class Robot extends TimedRobot {
     // return units and units/s
     //
 
-    double encoderConstant =
-        (1 / GEARING) * WHEEL_DIAMETER * Math.PI;
+    double encoderConstant = (1 / GEARING) * WHEEL_DIAMETER * Math.PI;
 
     leftEncoderPosition = ()
         -> leftEncoder.getPosition() * encoderConstant;
